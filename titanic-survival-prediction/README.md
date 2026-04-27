@@ -34,7 +34,7 @@ As tasks are assigned, they will be added to this repository. Each task or proje
 | # | Task | Status |
 |---|------|--------|
 | 1 | Titanic Survival Prediction | Completed |
-| 3 | GitHub upload and repo setup | Completed |
+| 2 | GitHub upload and repo setup | Completed |
 
 ---
 
