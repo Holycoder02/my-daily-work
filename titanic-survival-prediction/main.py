@@ -17,12 +17,49 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-DATA_FILE = Path(__file__).with_name("train.csv")
 TARGET_COLUMN = "Survived"
+REQUIRED_COLUMNS = {"Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "Name", TARGET_COLUMN}
+
+
+def resolve_data_file() -> Path:
+    script_dir = Path(__file__).resolve().parent
+    root_dir = script_dir.parent
+
+    # Check common Titanic dataset file names in both project root and script dir.
+    candidates = [
+        script_dir / "train.csv",
+        root_dir / "train.csv",
+        root_dir / "tested.csv",
+        script_dir / "tested.csv",
+        root_dir / "test.csv",
+        script_dir / "test.csv",
+    ]
+
+    for file_path in candidates:
+        if file_path.exists():
+            return file_path
+
+    searched = "\n".join(str(path) for path in candidates)
+    raise FileNotFoundError(
+        "Could not find a Titanic dataset CSV file. Searched these locations:\n"
+        f"{searched}"
+    )
 
 
 def load_data() -> pd.DataFrame:
-    return pd.read_csv(DATA_FILE)
+    data_file = resolve_data_file()
+    df = pd.read_csv(data_file)
+
+    missing_columns = REQUIRED_COLUMNS.difference(df.columns)
+    if missing_columns:
+        missing_sorted = ", ".join(sorted(missing_columns))
+        raise ValueError(
+            f"Dataset is missing required columns: {missing_sorted}. "
+            f"Loaded file: {data_file}"
+        )
+
+    print(f"Loaded dataset: {data_file}")
+    return df
 
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
