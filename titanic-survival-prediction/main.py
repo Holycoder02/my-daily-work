@@ -51,7 +51,7 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(data_file)
 
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
-    if missing_columns:
+    if missing_columns: 
         missing_sorted = ", ".join(sorted(missing_columns))
         raise ValueError(
             f"Dataset is missing required columns: {missing_sorted}. "
