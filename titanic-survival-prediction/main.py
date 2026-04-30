@@ -25,14 +25,10 @@ def resolve_data_file() -> Path:
     script_dir = Path(__file__).resolve().parent
     root_dir = script_dir.parent
 
-    # Check common Titanic dataset file names in both project root and script dir.
+    # Check the dataset in the script folder first, then the project root.
     candidates = [
-        script_dir / "train.csv",
-        root_dir / "train.csv",
-        root_dir / "tested.csv",
         script_dir / "tested.csv",
-        root_dir / "test.csv",
-        script_dir / "test.csv",
+        root_dir / "tested.csv",
     ]
 
     for file_path in candidates:
@@ -51,7 +47,7 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(data_file)
 
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
-    if missing_columns: 
+    if missing_columns:
         missing_sorted = ", ".join(sorted(missing_columns))
         raise ValueError(
             f"Dataset is missing required columns: {missing_sorted}. "

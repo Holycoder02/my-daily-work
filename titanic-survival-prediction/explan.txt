@@ -62,5 +62,228 @@ Short way to explain the whole script:
 "This program loads Titanic passenger data, creates a few useful features, cleans the missing values, converts text to numbers,
  trains a Logistic Regression model, and checks how accurate the predictions are on unseen data."
 
- ## 
+i can't really upload the cvs file 
+================================ DETAILED CODE LOGIC ================================
+
+## 1. IMPORTS & SETUP
+
+from pathlib import Path  # For file path handling
+import pandas as pd       # Data manipulation
+from sklearn.*            # Machine learning tools
+
+TARGET_COLUMN = "Survived"
+REQUIRED_COLUMNS = {"Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "Name", "Survived"}
+
+---
+
+## 2. resolve_data_file() - FIND THE DATASET
+
+Purpose: Search for tested.csv file in project directories
+
+Steps:
+1. Get current script directory
+2. Get parent directory (project root)
+3. Check both locations for tested.csv
+4. Return first found file path
+5. Raise error if file not found
+
+Location priority:
+- titanic-survival-prediction/tested.csv
+- Project root/tested.csv
+
+---
+
+## 3. load_data() - LOAD & VALIDATE DATA
+
+Purpose: Load CSV file and verify required columns exist
+
+Steps:
+1. Find data file using resolve_data_file()
+2. Read CSV into pandas DataFrame
+3. Check if all REQUIRED_COLUMNS are present
+4. If columns missing:
+	 - Sort missing columns alphabetically
+	 - Raise ValueError with list of missing columns
+5. Print loaded file path
+6. Return DataFrame
+
+Required columns:
+Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Name, Survived
+
+---
+
+## 4. add_features() - FEATURE ENGINEERING
+
+Purpose: Create new columns to improve model predictions
+
+Three new features created:
+
+A) FamilySize (Numeric)
+	 FamilySize = SibSp + Parch + 1
+   
+	 Example:
+	 - SibSp=1 (1 sibling), Parch=2 (2 parents)
+	 - FamilySize = 1 + 2 + 1 = 4
+   
+	 Why? Family size affects survival chances
+
+B) IsAlone (Binary: 0 or 1)
+	 IsAlone = 1 if FamilySize == 1 else 0
+   
+	 Example:
+	 - FamilySize = 1 → IsAlone = 1
+	 - FamilySize = 4 → IsAlone = 0
+   
+	 Why? Traveling alone may affect survival chances
+
+C) Title (Category)
+	 Extract title from Name using regex pattern: r",\s*([^\.]+)\."
+   
+	 Examples:
+	 - "Kelly, Mr. James" → Extract "Mr"
+	 - "Wilkes, Mrs. James" → Extract "Mrs"
+	 - "Williams, Miss. Jane" → Extract "Miss"
+   
+	 Then group rare titles:
+	 - Mlle, Ms → Miss
+	 - Mme → Mrs
+	 - Lady, Countess, Capt, Col, Don, Dr, Major, Rev, Sir, Jonkheer, Dona → Rare
+   
+	 Why? Social status (shown by title) affects survival chances
+
+---
+
+## 5. build_model() - CREATE ML PIPELINE
+
+Purpose: Create preprocessing + model combination
+
+Two parallel processing tracks:
+
+### NUMERIC TRACK (Continuous numbers)
+Features: Pclass, Age, SibSp, Parch, Fare, FamilySize, IsAlone
+
+Step 1: Imputation (Fill missing values)
+	- Strategy: "median"
+	- If Age=NaN, replace with median age of dataset
+	- If Fare=NaN, replace with median fare of dataset
+
+Step 2: Scaling (Normalize to same range)
+	- StandardScaler converts values to mean=0, std=1
+	- Prevents large numbers (Fare) from dominating small numbers (Pclass)
+	- Example: Age (0-80) and Fare (0-500) → Both become -3 to +3 range
+
+### CATEGORICAL TRACK (Text/categories)
+Features: Sex, Embarked, Title
+
+Step 1: Imputation (Fill missing values)
+	- Strategy: "most_frequent"
+	- Replace missing values with most common category
+	- Example: If Embarked mostly "S", missing Embarked → "S"
+
+Step 2: OneHotEncoding (Convert text to numbers)
+	- Sex: male, female → [1,0], [0,1]
+	- Embarked: S, C, Q → [1,0,0], [0,1,0], [0,0,1]
+	- Title: Mr, Mrs, Miss, Rare → [1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]
+	- handle_unknown="ignore" → Unknown categories become [0,0,0,0]
+
+### FINAL MODEL
+- Algorithm: Logistic Regression (binary classification)
+- max_iter=1000: Maximum training iterations to find best fit
+- class_weight="balanced": Adjusts for imbalanced data
+	- If 60% died, 40% survived, model gets penalized more for wrong predictions on minority class
+
+---
+
+## 6. main() - FULL WORKFLOW
+
+STEP 1: LOAD DATA
+	df = load_data()
+	Loads tested.csv into DataFrame
+
+STEP 2: ADD FEATURES
+	df = add_features(df)
+	Creates FamilySize, IsAlone, Title columns
+
+STEP 3: INSPECT DATA
+	Print first 5 rows and missing value counts
+	Helps verify data loaded correctly
+
+STEP 4: PREPARE FEATURES & TARGET
+	feature_columns = [list of 10 input features]
+	X = df[feature_columns]   # Input data (892 rows × 10 columns)
+	y = df[TARGET_COLUMN]     # Target (892 rows × 1 column: Survived 0/1)
+
+STEP 5: BUILD MODEL
+	model = build_model()
+	Creates Pipeline with preprocessing + classifier
+
+STEP 6: SPLIT DATA (80/20 train/test)
+	X_train, X_test, y_train, y_test = train_test_split(
+		X, y,
+		test_size=0.2,           # 20% for testing (≈168 rows)
+		random_state=42,         # Reproducible random split
+		stratify=y               # Keep same survival ratio (60/40) in both sets
+	)
+
+STEP 7: TRAIN MODEL
+	model.fit(X_train, y_train)
+	Model learns patterns from training data (80%)
+	Steps inside:
+	1. Preprocess numeric features (fill + scale)
+	2. Preprocess categorical features (fill + encode)
+	3. Logistic Regression trains on preprocessed data
+
+STEP 8: PREDICT ON TEST DATA
+	predictions = model.predict(X_test)
+	Model makes predictions on unseen test data
+	Returns 0 (died) or 1 (survived) for each test row
+
+STEP 9: EVALUATE RESULTS
+  
+	A) Accuracy Score
+		 accuracy = accuracy_score(y_test, predictions)
+		 How many predictions were correct?
+		 Example: 82 out of 84 correct = 0.9762 (97.62% accuracy)
+  
+	B) Confusion Matrix
+		 True Negatives    False Positives
+		 False Negatives   True Positives
+     
+		 Example:
+		 [[53  0]
+			[ 0 31]]
+		 - 53 correctly predicted did not survive
+		 - 31 correctly predicted survived
+		 - 0 incorrect predictions
+  
+	C) Classification Report
+		 For each class (0=died, 1=survived):
+		 - Precision: Of predicted survivors, how many actually survived?
+		 - Recall: Of actual survivors, how many did we find?
+		 - F1-score: Harmonic mean of precision and recall
+
+---
+
+## COMPLETE FLOW DIAGRAM
+
+tested.csv (892 rows)
+		↓
+[LOAD DATA] → Check required columns
+		↓
+[ADD FEATURES] → FamilySize, IsAlone, Title
+		↓
+[INSPECT] → Show sample rows & missing values
+		↓
+[PREPARE] → X (10 features) & y (target: Survived)
+		↓
+[SPLIT 80/20] → X_train (713), X_test (179)
+					 → y_train (713), y_test (179)
+		↓
+[BUILD MODEL] → Preprocessing + LogisticRegression
+		↓
+[TRAIN] → Fit on training data
+		↓
+[PREDICT] → Make predictions on test data
+		↓
+[EVALUATE] → Accuracy, Confusion Matrix, Classification Report
  i can't really upload the cvs file 
