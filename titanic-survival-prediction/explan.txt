@@ -26,7 +26,8 @@ The main parts of the script:
 	- IsAlone = 1 if the passenger was alone, otherwise 0
 	- Title = Mr, Mrs, Miss, and so on, taken from the passenger name
 
-These new features help the model understand family relationships and honorific titles, which can matter in survival prediction.
+These new features help the model understand family relationships and honorific titles,
+ which can matter in survival prediction.
 
 - build_model() creates the machine learning pipeline.
 	- Numeric columns are cleaned by filling missing values with the median and scaling them.
@@ -47,7 +48,8 @@ Inside main():
 
 Why train/test split is important:
 
-The model should not be tested on the same data it learned from. The test set is like a mini exam. It shows how well the model can handle new passengers it has never seen before.
+The model should not be tested on the same data it learned from. The test set is like a mini exam.
+ It shows how well the model can handle new passengers it has never seen before.
 
 What the results mean:
 
@@ -57,4 +59,8 @@ What the results mean:
 
 Short way to explain the whole script:
 
-"This program loads Titanic passenger data, creates a few useful features, cleans the missing values, converts text to numbers, trains a Logistic Regression model, and checks how accurate the predictions are on unseen data."
+"This program loads Titanic passenger data, creates a few useful features, cleans the missing values, converts text to numbers,
+ trains a Logistic Regression model, and checks how accurate the predictions are on unseen data."
+
+ ## 
+ i can't really upload the cvs file 
